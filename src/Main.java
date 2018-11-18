@@ -14,8 +14,9 @@ import java.util.concurrent.TimeUnit;
 public class Main extends Script {
 
     //areas
-    Area Monk = new Area(3056, 3489, 3059, 3482).setPlane(1);
-    Area Bones = new Area(3225, 3301, 3236, 3287);
+    Area monkArea = new Area(3056, 3489, 3059, 3487).setPlane(1);
+    Area boneArea = new Area(3225, 3301, 3236, 3287);
+    Area bankArea = new Area(3093, 3497, 3094, 3490);
 
     //constants for paint
     private final Font font = new Font("Arial", Font.BOLD, 11);
@@ -23,44 +24,54 @@ public class Main extends Script {
     long timeBegan;
     String status;
 
+    //constant items
+    String[] items = new String[] {"Bones", "Monk's robe", "Monk's robe top"};
+    private FrostHopper hopper;
+
     public enum State {
-        WALKMONK, WALKBONES, PICKUPBONES, PICKUPMONK, BURY, BANK
+        WALKMONK, WALKBONES, PICKUPBONES, PICKUPMONK, BURY, WALKBANK, BANK
     }
 
     private State getState() {
 
-        if (getSkills().getDynamic(Skill.PRAYER) <= 31 && !Bones.contains(myPosition())) {
+        if (getSkills().getDynamic(Skill.PRAYER) < 31 && !boneArea.contains(myPosition())) {
             log("Walk to bones");
             status = "Walk to bones..";
             return State.WALKBONES;
         }
 
-        if (getSkills().getDynamic(Skill.PRAYER) >= 32 && !Monk.contains(myPosition())) {
+        if (getSkills().getDynamic(Skill.PRAYER) >= 31 && !monkArea.contains(myPosition()) && !getInventory().isFull()) {
             log("Walk to monks");
             status = "Walk to monks..";
             return State.WALKMONK;
         }
 
-        if (Bones.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
+        if (getInventory().isFull() && (getInventory().contains("Monk's Robe") || getInventory().contains("Monk's Robe Top")) && !bankArea.contains(myPosition())) {
+            status = "Walking to bank";
+            return State.WALKBANK;
+        }
+
+        if (boneArea.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
             log("Pickup Bones");
             status = "Picking up bones..";
             return State.PICKUPBONES;
         }
 
-        if (Monk.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
+        if (monkArea.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
             log("Pickup Monk");
             status = "Picking up monk..";
             return State.PICKUPMONK;
         }
 
-        if (getInventory().getAmount("Bones") == 28 || getInventory().isFull()) {
+        if (getInventory().getAmount("Bones") == 28) {
             log("Bury");
             status = "Burying Bones..";
             return State.BURY;
         }
 
-        if (getInventory().getAmount("Monk Robe") == 28) {
-            status = "Banking";
+        if (bankArea.contains(myPosition()) && getInventory().getEmptySlotCount() == 0){
+            log("Banking");
+            status = "Opening bank..";
             return State.BANK;
         }
 
@@ -69,6 +80,7 @@ public class Main extends Script {
 
     @Override
     public void onStart() {
+        hopper = new FrostHopper(this);
         timeBegan = System.currentTimeMillis();
         getExperienceTracker().start(Skill.PRAYER);
     }
@@ -78,16 +90,19 @@ public class Main extends Script {
         try {
             switch (getState()) {
                 case WALKMONK:
-                    walkToArea(Monk);
+                    walkToArea(monkArea);
                     break;
                 case WALKBONES:
-                    walkToArea(Bones);
+                    walkToArea(boneArea);
+                    break;
+                case WALKBANK:
+                    walkToArea(bankArea);
                     break;
                 case PICKUPBONES:
-                    pickup(Bones);
+                    pickup(boneArea);
                     break;
                 case PICKUPMONK:
-                    pickup(Monk);
+                    pickup(monkArea);
                     break;
                 case BURY:
                     bury();
@@ -99,7 +114,7 @@ public class Main extends Script {
         } catch (Exception e){
 
         }
-        return random(500, 500);
+        return random(3000, 5000);
     }
 
     @Override
@@ -115,13 +130,17 @@ public class Main extends Script {
         //g.drawString("Coal miner ~ David", 15, 240);
         //g.drawString("Ore mined: " + coalCollected, 15, 265);
         g.drawString("Time ran: " + ft(timeRan), 15, 280);
-        switch (getState()) {
-            case PICKUPBONES:
-                paintXp(g);
-                break;
-            case BURY:
-                paintXp(g);
-                break;
+        try {
+            switch (getState()) {
+                case PICKUPBONES:
+                    paintXp(g);
+                    break;
+                case BURY:
+                    paintXp(g);
+                    break;
+            }
+        } catch (Exception e){
+
         }
 
     }
@@ -137,23 +156,25 @@ public class Main extends Script {
     }
 
     //pickup Bones || robes
-    public void pickup(Area a) {
-        GroundItem Bones = getGroundItems().closest(obj -> obj.getName().equals("Bones") && a.contains(obj));
-        try {
-            if (Bones != null) {
-                if (Bones.interact("Take")) {
-                    long boneCount = inventory.getAmount("Bones");
-                    if (new ConditionalSleep(2000, 1000) {
-                        @Override
-                        public boolean condition() {
-                            log("Taken");
-                            return inventory.getAmount("Bones") > boneCount;
-                        }
-                    }.sleep()) ;
+    public void pickup(Area area) {
+        for (String i : items) {
+            GroundItem Items = getGroundItems().closest(obj -> obj.getName().equals(i) && area.contains(obj));
+            try {
+                if (Items != null && Items.isVisible()) {
+                    if (Items.interact("Take")) {
+                        long count = inventory.getAmount(i);
+                        if (new ConditionalSleep(2000, 1000) {
+                            @Override
+                            public boolean condition() {
+                                status = ("Taken");
+                                return inventory.getAmount(i) > count;
+                            }
+                        }.sleep()) ;
+                    }
                 }
-            }
-        } catch (Exception e) {
+            } catch (Exception e) {
 
+            }
         }
     }
 
@@ -161,18 +182,39 @@ public class Main extends Script {
     public void bury() {
         inventory.dropAllExcept("Bones");
         while (inventory.contains("Bones")) {
-                inventory.interact("Bury", "Bones");
-            try {
-                sleep(300);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if(inventory.interact("Bury", "Bones")) {
+                long count = inventory.getAmount("Bones");
+                if (new ConditionalSleep(500, 100) {
+                    @Override
+                    public boolean condition() {
+                        log("Buried");
+                        return inventory.getAmount("Bones") > count;
+                    }
+                }.sleep()) ;
             }
         }
     }
 
     public void bank() {
-
+        if (!getBank().isOpen()) {
+            try {
+                getBank().open();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                log(e.toString());
+            }
+            new ConditionalSleep(2500, 3000) {
+                @Override
+                public boolean condition() {
+                    return getBank().isOpen();
+                }
+            }.sleep();
+        } else {
+                getBank().depositAll();
+                getBank().close();
+            }
     }
+
 
     public void paintXp (Graphics g){
         g.drawString("Prayer xp | p/h: " + getExperienceTracker().getGainedXP(Skill.PRAYER) + " | "
