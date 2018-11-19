@@ -6,7 +6,6 @@ import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import org.osbot.rs07.api.Worlds;
 
 import java.awt.*;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +25,7 @@ public class Main extends Script {
                     { 3239, 3608 }
             }
     );
-    Area bankArea = new Area(3093, 3497, 3094, 3490);
+    Area bankArea = new Area(3093, 3497, 3097, 3489);
 
     //constants for paint
     private final Font font = new Font("Arial", Font.BOLD, 11);
@@ -54,9 +53,14 @@ public class Main extends Script {
             return State.WALKMONK;
         }
 
-        if (getInventory().isFull() && (getInventory().contains("Monk's Robe") || getInventory().contains("Monk's Robe Top")) && !bankArea.contains(myPosition())) {
-            status = "Walking to bank";
+        if (getInventory().isFull() && (getInventory().contains("Monk's robe")) && !bankArea.contains(myPosition())) {
+            status = "Walking to bank..";
             return State.WALKBANK;
+        }
+
+        if (bankArea.contains(myPosition()) && getInventory().contains("Monk's robe")){
+            status = "Opening bank..";
+            return State.BANK;
         }
 
         if (boneArea.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
@@ -74,18 +78,12 @@ public class Main extends Script {
             return State.BURY;
         }
 
-        if (bankArea.contains(myPosition()) && getInventory().getEmptySlotCount() == 0){
-            status = "Opening bank..";
-            return State.BANK;
-        }
-
         return null;
     }
 
     @Override
     public void onStart() {
 
-        getKeyboard().typeString("::toggleroofs");
         timeBegan = System.currentTimeMillis();
         getExperienceTracker().start(Skill.PRAYER);
     }
@@ -103,6 +101,9 @@ public class Main extends Script {
                 case WALKBANK:
                     walkToArea(bankArea);
                     break;
+                case BANK:
+                    bank();
+                    break;
                 case PICKUPBONES:
                     pickup(boneArea, "Bone");
                     break;
@@ -112,14 +113,11 @@ public class Main extends Script {
                 case BURY:
                     bury();
                     break;
-                case BANK:
-                    bank();
-                    break;
             }
         } catch (Exception e){
-
+            //log(e.toString() + "State");
         }
-        return random(200, 400);
+        return random(500, 1000);
     }
 
     @Override
@@ -158,19 +156,41 @@ public class Main extends Script {
     // Walk to Area
     public void walkToArea(Area a) {
         getWalking().webWalk(a);
+
+        /*if (dialogues.isPendingOption()) {
+            dialogues.selectOption(1);
+            try {
+                sleep(random(800, 1100));
+            } catch (Exception e) {
+
+            }
+        } else if (dialogues.isPendingContinuation()) {
+            dialogues.clickContinue();
+            try {
+                sleep(random(800, 1100));
+            } catch (Exception e) {
+
+            }
+        } else {
+            log("Trying");
+
+        }*/
+
     }
+
+
+
 
     //pickup Bones || robes
     public void pickup(Area area, String item) {
         GroundItem Items = getGroundItems().closest(obj -> obj.getName().startsWith(item) && area.contains(obj));
             if(Items != null) {
                 log(item + " in Area");
+                long count = inventory.getAmount(item);
                 try {
-                    if (Items != null) {
                         if (Items.interact("Take")) {
                             log(item + " Found " + Items.getX() + Items.getY());
-                            long count = inventory.getAmount(item);
-                            if (new ConditionalSleep(2000) {
+                            if (new ConditionalSleep(2000,250) {
                                 @Override
                                 public boolean condition() {
                                     log(item + " Walking to");
@@ -178,9 +198,7 @@ public class Main extends Script {
                                 }
                             }.sleep()) ;
                         }
-                    }
                 } catch (Exception e) {
-
                 }
             } else {
                 worlds.hopToF2PWorld();
@@ -196,7 +214,6 @@ public class Main extends Script {
                 if (new ConditionalSleep(600) {
                     @Override
                     public boolean condition() {
-
                         return inventory.getAmount("Bones") > count;
                     }
                 }.sleep()) ;
@@ -205,23 +222,28 @@ public class Main extends Script {
     }
 
     public void bank() {
-        if (!getBank().isOpen()) {
-            try {
-                getBank().open();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                log(e.toString());
-            }
-            new ConditionalSleep(2500, 3000) {
-                @Override
-                public boolean condition() {
-                    return getBank().isOpen();
+        try {
+            if (!getBank().isOpen()) {
+                try {
+                    getBank().open();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    log(e.toString());
+                    log("Cant bank");
                 }
-            }.sleep();
-        } else {
+                new ConditionalSleep(2500, 3000) {
+                    @Override
+                    public boolean condition() {
+                        return getBank().isOpen();
+                    }
+                }.sleep();
+            } else {
                 getBank().depositAll();
                 getBank().close();
             }
+        } catch (Exception e){
+            log(e.toString() + "Banking");
+        }
     }
 
 
