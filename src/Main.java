@@ -63,7 +63,7 @@ public class Main extends Script {
             return State.PICKUPMONK;
         }
 
-        if (getInventory().getAmount("Bones") == 28) {
+        if (getInventory().isFull() && getInventory().contains("Bones")) {
             log("Bury");
             status = "Burying Bones..";
             return State.BURY;
