@@ -1,10 +1,12 @@
 import org.osbot.rs07.api.GroundItems;
+import org.osbot.rs07.api.Settings;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.GroundItem;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
+import org.osbot.rs07.api.Worlds;
 
 import java.awt.*;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +17,15 @@ public class Main extends Script {
 
     //areas
     Area monkArea = new Area(3056, 3489, 3059, 3487).setPlane(1);
-    Area boneArea = new Area(3225, 3301, 3236, 3287);
+    Area boneArea = new Area(
+            new int[][]{
+                    { 3234, 3609 },
+                    { 3234, 3605 },
+                    { 3237, 3603 },
+                    { 3240, 3603 },
+                    { 3239, 3608 }
+            }
+    );
     Area bankArea = new Area(3093, 3497, 3094, 3490);
 
     //constants for paint
@@ -25,8 +35,8 @@ public class Main extends Script {
     String status;
 
     //constant items
-    String[] items = new String[] {"Bones", "Monk's robe", "Monk's robe top"};
-    private FrostHopper hopper;
+    String[] Bones = new String[] {"Bones"};
+    String[] Monkrobe = new String[] {"Monk's robe", "Monk's robe top"};
 
     public enum State {
         WALKMONK, WALKBONES, PICKUPBONES, PICKUPMONK, BURY, WALKBANK, BANK
@@ -35,13 +45,11 @@ public class Main extends Script {
     private State getState() {
 
         if (getSkills().getDynamic(Skill.PRAYER) < 31 && !boneArea.contains(myPosition())) {
-            log("Walk to bones");
             status = "Walk to bones..";
             return State.WALKBONES;
         }
 
         if (getSkills().getDynamic(Skill.PRAYER) >= 31 && !monkArea.contains(myPosition()) && !getInventory().isFull()) {
-            log("Walk to monks");
             status = "Walk to monks..";
             return State.WALKMONK;
         }
@@ -52,25 +60,21 @@ public class Main extends Script {
         }
 
         if (boneArea.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
-            log("Pickup Bones");
             status = "Picking up bones..";
             return State.PICKUPBONES;
         }
 
         if (monkArea.contains(myPosition()) && getInventory().getEmptySlotCount() != 0) {
-            log("Pickup Monk");
             status = "Picking up monk..";
             return State.PICKUPMONK;
         }
 
         if (getInventory().isFull() && getInventory().contains("Bones")) {
-            log("Bury");
             status = "Burying Bones..";
             return State.BURY;
         }
 
         if (bankArea.contains(myPosition()) && getInventory().getEmptySlotCount() == 0){
-            log("Banking");
             status = "Opening bank..";
             return State.BANK;
         }
@@ -80,7 +84,8 @@ public class Main extends Script {
 
     @Override
     public void onStart() {
-        hopper = new FrostHopper(this);
+
+        getKeyboard().typeString("::toggleroofs");
         timeBegan = System.currentTimeMillis();
         getExperienceTracker().start(Skill.PRAYER);
     }
@@ -99,10 +104,10 @@ public class Main extends Script {
                     walkToArea(bankArea);
                     break;
                 case PICKUPBONES:
-                    pickup(boneArea);
+                    pickup(boneArea, "Bone");
                     break;
                 case PICKUPMONK:
-                    pickup(monkArea);
+                    pickup(monkArea, "Monk");
                     break;
                 case BURY:
                     bury();
@@ -114,7 +119,7 @@ public class Main extends Script {
         } catch (Exception e){
 
         }
-        return random(3000, 5000);
+        return random(200, 400);
     }
 
     @Override
@@ -156,26 +161,30 @@ public class Main extends Script {
     }
 
     //pickup Bones || robes
-    public void pickup(Area area) {
-        for (String i : items) {
-            GroundItem Items = getGroundItems().closest(obj -> obj.getName().equals(i) && area.contains(obj));
-            try {
-                if (Items != null && Items.isVisible()) {
-                    if (Items.interact("Take")) {
-                        long count = inventory.getAmount(i);
-                        if (new ConditionalSleep(2000, 1000) {
-                            @Override
-                            public boolean condition() {
-                                status = ("Taken");
-                                return inventory.getAmount(i) > count;
-                            }
-                        }.sleep()) ;
+    public void pickup(Area area, String item) {
+        GroundItem Items = getGroundItems().closest(obj -> obj.getName().startsWith(item) && area.contains(obj));
+            if(Items != null) {
+                log(item + " in Area");
+                try {
+                    if (Items != null) {
+                        if (Items.interact("Take")) {
+                            log(item + " Found " + Items.getX() + Items.getY());
+                            long count = inventory.getAmount(item);
+                            if (new ConditionalSleep(2000) {
+                                @Override
+                                public boolean condition() {
+                                    log(item + " Walking to");
+                                    return inventory.getAmount(item) > count;
+                                }
+                            }.sleep()) ;
+                        }
                     }
-                }
-            } catch (Exception e) {
+                } catch (Exception e) {
 
+                }
+            } else {
+                worlds.hopToF2PWorld();
             }
-        }
     }
 
     //Burying bones
@@ -184,10 +193,10 @@ public class Main extends Script {
         while (inventory.contains("Bones")) {
             if(inventory.interact("Bury", "Bones")) {
                 long count = inventory.getAmount("Bones");
-                if (new ConditionalSleep(500, 100) {
+                if (new ConditionalSleep(600) {
                     @Override
                     public boolean condition() {
-                        log("Buried");
+
                         return inventory.getAmount("Bones") > count;
                     }
                 }.sleep()) ;
