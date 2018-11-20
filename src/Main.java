@@ -1,10 +1,16 @@
+import org.osbot.rs07.api.Dialogues;
 import org.osbot.rs07.api.GroundItems;
 import org.osbot.rs07.api.Settings;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.GroundItem;
+import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
+import org.osbot.rs07.api.ui.World;
+import org.osbot.rs07.event.WebWalkEvent;
+import org.osbot.rs07.script.MethodProvider;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
+import org.osbot.rs07.utility.Condition;
 import org.osbot.rs07.utility.ConditionalSleep;
 
 import java.awt.*;
@@ -33,9 +39,6 @@ public class Main extends Script {
     long timeBegan;
     String status;
 
-    //constant items
-    String[] Bones = new String[] {"Bones"};
-    String[] Monkrobe = new String[] {"Monk's robe", "Monk's robe top"};
 
     public enum State {
         WALKMONK, WALKBONES, PICKUPBONES, PICKUPMONK, BURY, WALKBANK, BANK
@@ -155,25 +158,63 @@ public class Main extends Script {
 
     // Walk to Area
     public void walkToArea(Area a) {
-        getWalking().webWalk(a);
 
+        if (widgets.get(475, 11) != null) {
+            widgets.get(475, 11).interact();
+            log("Crossing Wilderness Ditch");
+            //sleep(500);
+            walking.webWalk(a);
+        }
         /*if (dialogues.isPendingOption()) {
             dialogues.selectOption(1);
-            try {
-                sleep(random(800, 1100));
-            } catch (Exception e) {
-
-            }
         } else if (dialogues.isPendingContinuation()) {
             dialogues.clickContinue();
-            try {
-                sleep(random(800, 1100));
-            } catch (Exception e) {
+        } else {
+            walking.webWalk(a);
+        }*/
 
+        WebWalkEvent evt = new WebWalkEvent(a);
+        evt.setBreakCondition(new Condition() {
+            @Override
+            public boolean evaluate() {
+                return widgets.get(475, 11) != null;
             }
+        });
+        execute(evt);
+
+
+/*
+                if(getWalking().webWalk(a)){
+                    if (getWidgets().get(475, 11) != null) {
+                        getWidgets().get(475, 11).interact();
+                        log("Crossing Wilderness Ditch");
+                        try {
+                            sleep(100);
+                        } catch (Exception e) {
+                            log(e);
+                        }
+                }
+
+
+        }
+        /*if
         } else {
             log("Trying");
+} else if (dialogues.isPendingOption()) {
+                dialogues.selectOption(1);
+                try {
+                    sleep(random(800, 1100));
+                } catch (Exception e) {
+                    log(e);
+                }
+            } else if (dialogues.isPendingContinuation()) {
+                dialogues.clickContinue();
+                try {
+                    sleep(random(800, 1100));
+                } catch (Exception e) {
 
+                }
+            }
         }*/
 
     }
