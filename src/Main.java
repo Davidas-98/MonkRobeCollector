@@ -120,7 +120,7 @@ public class Main extends Script {
         } catch (Exception e){
             //log(e.toString() + "State");
         }
-        return random(50, 100);
+        return random(100, 150);
     }
 
     @Override
@@ -159,25 +159,29 @@ public class Main extends Script {
     // Walk to Area
     public void walkToArea(Area a) {
 
+        //check for wilderness border crossing
         if (widgets.get(475, 11) != null) {
             widgets.get(475, 11).interact();
             log("Crossing Wilderness Ditch");
             //sleep(500);
             walking.webWalk(a);
         }
-        /*if (dialogues.isPendingOption()) {
+
+        //check for monk talking to him
+        if (dialogues.isPendingOption()) {
             dialogues.selectOption(1);
         } else if (dialogues.isPendingContinuation()) {
             dialogues.clickContinue();
         } else {
             walking.webWalk(a);
-        }*/
+        }
 
+        //wait for one of the events to return true
         WebWalkEvent evt = new WebWalkEvent(a);
         evt.setBreakCondition(new Condition() {
             @Override
             public boolean evaluate() {
-                return widgets.get(475, 11) != null;
+                return widgets.get(475, 11) != null || dialogues.isPendingOption() || dialogues.isPendingContinuation();
             }
         });
         execute(evt);
@@ -231,7 +235,7 @@ public class Main extends Script {
                 try {
                         if (Items.interact("Take")) {
                             log(item + " Found " + Items.getX() + Items.getY());
-                            if (new ConditionalSleep(2000,250) {
+                            if (new ConditionalSleep(1000,400) {
                                 @Override
                                 public boolean condition() {
                                     log(item + " Walking to");
