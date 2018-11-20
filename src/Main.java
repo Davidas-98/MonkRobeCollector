@@ -120,7 +120,7 @@ public class Main extends Script {
         } catch (Exception e){
             //log(e.toString() + "State");
         }
-        return random(500, 1000);
+        return random(50, 100);
     }
 
     @Override
