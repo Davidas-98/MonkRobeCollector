@@ -25,7 +25,7 @@ public class Main extends Script {
                     { 3239, 3608 }
             }
     );
-    Area bankArea = new Area(3093, 3497, 3097, 3489);
+    Area bankArea = new Area(3093, 3497, 3098, 3488);
 
     //constants for paint
     private final Font font = new Font("Arial", Font.BOLD, 11);
