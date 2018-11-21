@@ -1,6 +1,8 @@
+import org.osbot.rs07.api.Worlds;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.GroundItem;
 import org.osbot.rs07.api.ui.Skill;
+import org.osbot.rs07.api.ui.World;
 import org.osbot.rs07.event.WebWalkEvent;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
@@ -177,29 +179,47 @@ public class Main extends Script {
         //updates monks collected in paint
         update();
 
-            if(Items != null) {
-                log(item + " in Area");
+        //if item spawn is there
+        if (Items != null) {
+            log("Item here");
+            // if it is is visible pick it up
+            if(Items.isVisible()) {
+                log(item + " is Visisble");
                 long count = inventory.getAmount(item);
                 try {
-                        if (Items.interact("Take")) {
-                            log(item + " Found " + Items.getX() + Items.getY());
-                            if (new ConditionalSleep(1000,400) {
-                                @Override
-                                public boolean condition() {
-                                    log(item + " Walking to");
-                                    return inventory.getAmount(item) > count;
-                                }
-                            }.sleep()) ;
-                        }
+                    //pickup item
+                    if (Items.interact("Take")) {
+                        log(item + " Found " + Items.getX() + Items.getY());
+                        if (new ConditionalSleep(1000, 400) {
+                            @Override
+                            public boolean condition() {
+                                log(item + " taking");
+                                return inventory.getAmount(item) > count;
+                            }
+                        }.sleep()) ;
+                    }
                 } catch (Exception e) {
                 }
+                //it is not visible
             } else {
-                try {
-                    sleep(300);{
-                    }
-                } catch (Exception e) {}
-                worlds.hopToF2PWorld();
+                log("Moving camera");
+                getCamera().toTop();
             }
+            // If not items worldhop
+        } else {
+            if (myPlayer().exists()) {
+                int world = getWorlds().getCurrentWorld();
+                if (worlds.hopToF2PWorld()) {
+                    if (new ConditionalSleep(1000, 400) {
+                        @Override
+                        public boolean condition() {
+                            log(item + " hopping");
+                            return getWorlds().getCurrentWorld() != world;
+                        }
+                    }.sleep()) ;
+                }
+            }
+        }
     }
 
     //Burying bones
