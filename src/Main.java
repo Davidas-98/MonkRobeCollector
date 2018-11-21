@@ -1,13 +1,7 @@
-import org.osbot.rs07.api.Dialogues;
-import org.osbot.rs07.api.GroundItems;
-import org.osbot.rs07.api.Settings;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.GroundItem;
-import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
-import org.osbot.rs07.api.ui.World;
 import org.osbot.rs07.event.WebWalkEvent;
-import org.osbot.rs07.script.MethodProvider;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.Condition;
@@ -166,7 +160,6 @@ public class Main extends Script {
             //sleep(500);
             walking.webWalk(a);
         }
-
         //check for monk talking to him
         if (dialogues.isPendingOption()) {
             dialogues.selectOption(1);
