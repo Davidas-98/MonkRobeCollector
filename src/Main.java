@@ -171,9 +171,12 @@ public class Main extends Script {
 
     }
 
-    //pickup Bones || robes
+    //pickup Bones || robes and worldhops if none available
     public void pickup(Area area, String item) {
         GroundItem Items = getGroundItems().closest(obj -> obj.getName().startsWith(item) && area.contains(obj));
+        //updates monks collected in paint
+        update();
+
             if(Items != null) {
                 log(item + " in Area");
                 long count = inventory.getAmount(item);
@@ -187,7 +190,7 @@ public class Main extends Script {
                                     return inventory.getAmount(item) > count;
                                 }
                             }.sleep()) ;
-                        } update();
+                        }
                 } catch (Exception e) {
                 }
             } else {
@@ -248,6 +251,7 @@ public class Main extends Script {
                 robesOnStart = amount;
             } else {
                 robesCollected += amount - robesOnStart;
+
                 robesOnStart = amount;
             }
         }
@@ -261,7 +265,8 @@ public class Main extends Script {
     }
 
     public void paintMonk(Graphics g){
-        g.drawString("Robes collected: " + robesCollected, 15, 295);
+        g.drawString("Robes collected: " + robesCollected , 15, 295);
+        g.drawString("GP gained (estimate): " + (robesCollected * 357), 15, 310);
     }
 
     //Displays time from milliseconds to hour:minute:seconds
