@@ -203,7 +203,7 @@ public class Main extends Script {
                 //it is not visible
             } else {
                 log("Moving camera");
-                getCamera().toTop();
+                getCamera().toEntity(Items);
             }
             // If not items worldhop
         } else {
