@@ -190,6 +190,10 @@ public class Main extends Script {
                 } catch (Exception e) {
                 }
             } else {
+                try {
+                    sleep(300);{
+                    }
+                } catch (Exception e) {}
                 worlds.hopToF2PWorld();
             }
     }
