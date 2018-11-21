@@ -81,32 +81,34 @@ public class Main extends Script {
 
     @Override
     public int onLoop() throws InterruptedException {
-        try {
-            switch (getState()) {
-                case WALKMONK:
-                    walkToArea(monkArea);
-                    break;
-                case WALKBONES:
-                    walkToArea(boneArea);
-                    break;
-                case WALKBANK:
-                    walkToArea(bankArea);
-                    break;
-                case BANK:
-                    bank();
-                    break;
-                case PICKUPBONES:
-                    pickup(boneArea, "Bone");
-                    break;
-                case PICKUPMONK:
-                    pickup(monkArea, "Monk");
-                    break;
-                case BURY:
-                    bury();
-                    break;
+        if(myPlayer().isVisible()) {
+            try {
+                switch (getState()) {
+                    case WALKMONK:
+                        walkToArea(monkArea);
+                        break;
+                    case WALKBONES:
+                        walkToArea(boneArea);
+                        break;
+                    case WALKBANK:
+                        walkToArea(bankArea);
+                        break;
+                    case BANK:
+                        bank();
+                        break;
+                    case PICKUPBONES:
+                        pickup(boneArea, "Bone");
+                        break;
+                    case PICKUPMONK:
+                        pickup(monkArea, "Monk");
+                        break;
+                    case BURY:
+                        bury();
+                        break;
+                }
+            } catch (Exception e) {
+                //log(e.toString() + "State");
             }
-        } catch (Exception e){
-            //log(e.toString() + "State");
         }
         return random(100, 150);
     }
@@ -128,7 +130,6 @@ public class Main extends Script {
         if(getState() == State.PICKUPBONES || getState() == State.BURY) {
             paintXp(g);
         } else if (getState() == State.PICKUPMONK || getState() == State.BANK ||  getState() == State.WALKMONK||  getState() == State.WALKBANK){
-            update();
             paintMonk(g);
         }
 
@@ -186,7 +187,7 @@ public class Main extends Script {
                                     return inventory.getAmount(item) > count;
                                 }
                             }.sleep()) ;
-                        }
+                        } update();
                 } catch (Exception e) {
                 }
             } else {
