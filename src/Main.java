@@ -16,21 +16,15 @@ public class Main extends Script {
 
     //areas
     Area monkArea = new Area(3056, 3489, 3059, 3487).setPlane(1);
-    Area boneArea = new Area(
-            new int[][]{
-                    { 3234, 3609 },
-                    { 3234, 3605 },
-                    { 3237, 3603 },
-                    { 3240, 3603 },
-                    { 3239, 3608 }
-            }
-    );
+    Area boneArea = new Area(new int[][]{{ 3234, 3609 }, { 3234, 3605 }, { 3237, 3603 }, { 3240, 3603 }, { 3239, 3608 }});
     Area bankArea = new Area(3093, 3497, 3098, 3488);
 
     //constants for paint
     private final Font font = new Font("Arial", Font.BOLD, 11);
     long timeRan;
     long timeBegan;
+    long robesOnStart;
+    long robesCollected;
     String status;
 
 
@@ -80,9 +74,9 @@ public class Main extends Script {
 
     @Override
     public void onStart() {
-
         timeBegan = System.currentTimeMillis();
         getExperienceTracker().start(Skill.PRAYER);
+        robesOnStart = getInventory().getAmount("Monk's robe", "Monk's robe top");
     }
 
     @Override
@@ -130,17 +124,12 @@ public class Main extends Script {
         //g.drawString("Coal miner ~ David", 15, 240);
         //g.drawString("Ore mined: " + coalCollected, 15, 265);
         g.drawString("Time ran: " + ft(timeRan), 15, 280);
-        try {
-            switch (getState()) {
-                case PICKUPBONES:
-                    paintXp(g);
-                    break;
-                case BURY:
-                    paintXp(g);
-                    break;
-            }
-        } catch (Exception e){
 
+        if(getState() == State.PICKUPBONES || getState() == State.BURY) {
+            paintXp(g);
+        } else if (getState() == State.PICKUPMONK || getState() == State.BANK ||  getState() == State.WALKMONK||  getState() == State.WALKBANK){
+            update();
+            paintMonk(g);
         }
 
     }
@@ -179,45 +168,7 @@ public class Main extends Script {
         });
         execute(evt);
 
-
-/*
-                if(getWalking().webWalk(a)){
-                    if (getWidgets().get(475, 11) != null) {
-                        getWidgets().get(475, 11).interact();
-                        log("Crossing Wilderness Ditch");
-                        try {
-                            sleep(100);
-                        } catch (Exception e) {
-                            log(e);
-                        }
-                }
-
-
-        }
-        /*if
-        } else {
-            log("Trying");
-} else if (dialogues.isPendingOption()) {
-                dialogues.selectOption(1);
-                try {
-                    sleep(random(800, 1100));
-                } catch (Exception e) {
-                    log(e);
-                }
-            } else if (dialogues.isPendingContinuation()) {
-                dialogues.clickContinue();
-                try {
-                    sleep(random(800, 1100));
-                } catch (Exception e) {
-
-                }
-            }
-        }*/
-
     }
-
-
-
 
     //pickup Bones || robes
     public void pickup(Area area, String item) {
@@ -284,12 +235,28 @@ public class Main extends Script {
         }
     }
 
+    public void update(){
+        long amount = getInventory().getAmount("Monk's robe", "Monk's robe top");
+        if(robesOnStart != amount) {
+            if (amount == 0)
+            {
+                robesOnStart = amount;
+            } else {
+                robesCollected += amount - robesOnStart;
+                robesOnStart = amount;
+            }
+        }
+    }
 
     public void paintXp (Graphics g){
         g.drawString("Prayer xp | p/h: " + getExperienceTracker().getGainedXP(Skill.PRAYER) + " | "
                 + getExperienceTracker().getGainedXPPerHour(Skill.PRAYER), 15, 295);
         g.drawString("TTL: " + ft(getExperienceTracker().getTimeToLevel(Skill.PRAYER)), 15, 310);
         g.drawString("Levels gained | Current lvl: " + getExperienceTracker().getGainedLevels(Skill.PRAYER) + " | " + getSkills().getDynamic(Skill.PRAYER), 15, 325);
+    }
+
+    public void paintMonk(Graphics g){
+        g.drawString("Robes collected: " + robesCollected, 15, 295);
     }
 
     //Displays time from milliseconds to hour:minute:seconds
