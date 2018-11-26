@@ -1,6 +1,8 @@
+import org.osbot.rs07.api.Settings;
 import org.osbot.rs07.api.Worlds;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.GroundItem;
+import org.osbot.rs07.api.ui.EquipmentSlot;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.World;
 import org.osbot.rs07.event.WebWalkEvent;
@@ -10,6 +12,7 @@ import org.osbot.rs07.utility.Condition;
 import org.osbot.rs07.utility.ConditionalSleep;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.concurrent.TimeUnit;
 
 
@@ -76,6 +79,9 @@ public class Main extends Script {
 
     @Override
     public void onStart() {
+        if(!settings.areRoofsEnabled()){
+            getKeyboard().typeString("::toggleroofs");
+        }
         timeBegan = System.currentTimeMillis();
         getExperienceTracker().start(Skill.PRAYER);
         robesOnStart = getInventory().getAmount("Monk's robe", "Monk's robe top");
@@ -112,7 +118,7 @@ public class Main extends Script {
                 //log(e.toString() + "State");
             }
         }
-        return random(100, 150);
+        return random(100);
     }
 
     @Override
@@ -177,20 +183,20 @@ public class Main extends Script {
     public void pickup(Area area, String item) {
         GroundItem Items = getGroundItems().closest(obj -> obj.getName().startsWith(item) && area.contains(obj));
         //updates monks collected in paint
-        update();
-
+        updatePaint();
+        //Checks if monkrobes can be equipped
+        equipMonk();
         //if item spawn is there
         if (Items != null) {
             log("Item here");
-            // if it is is visible pick it up
             if(Items.isVisible()) {
-                log(item + " is Visisble");
+                log(item + " is visible");
                 long count = inventory.getAmount(item);
                 try {
                     //pickup item
                     if (Items.interact("Take")) {
                         log(item + " Found " + Items.getX() + Items.getY());
-                        if (new ConditionalSleep(1000, 400) {
+                        if (new ConditionalSleep(1000, 600) {
                             @Override
                             public boolean condition() {
                                 log(item + " taking");
@@ -201,22 +207,18 @@ public class Main extends Script {
                 } catch (Exception e) {
                 }
                 //it is not visible
-            } else {
-                log("Moving camera");
-                getCamera().toEntity(Items);
             }
-            // If not items worldhop
-        } else {
+            } else {
             if (myPlayer().exists()) {
                 int world = getWorlds().getCurrentWorld();
                 if (worlds.hopToF2PWorld()) {
-                    if (new ConditionalSleep(1000, 400) {
+                    new ConditionalSleep(1000, 250) {
                         @Override
                         public boolean condition() {
                             log(item + " hopping");
                             return getWorlds().getCurrentWorld() != world;
                         }
-                    }.sleep()) ;
+                    }.sleep();
                 }
             }
         }
@@ -238,6 +240,7 @@ public class Main extends Script {
         }
     }
 
+    //Banks everything on the account
     public void bank() {
         try {
             if (!getBank().isOpen()) {
@@ -256,6 +259,7 @@ public class Main extends Script {
                 }.sleep();
             } else {
                 getBank().depositAll();
+                getBank().depositWornItems();
                 getBank().close();
             }
         } catch (Exception e){
@@ -263,7 +267,7 @@ public class Main extends Script {
         }
     }
 
-    public void update(){
+    public void updatePaint(){
         long amount = getInventory().getAmount("Monk's robe", "Monk's robe top");
         if(robesOnStart != amount) {
             if (amount == 0)
@@ -273,6 +277,19 @@ public class Main extends Script {
                 robesCollected += amount - robesOnStart;
 
                 robesOnStart = amount;
+            }
+        }
+    }
+
+    public void equipMonk(){
+        if(!equipment.isWearingItem(EquipmentSlot.CHEST) || !equipment.isWearingItem(EquipmentSlot.LEGS) && getInventory().getEmptySlotCount() > 3){
+            if(getEquipment().equipForNameThatContains(EquipmentSlot.CHEST, "Monk")) {
+                new ConditionalSleep(1000, 250) {
+                    @Override
+                    public boolean condition() {
+                        return equipment.isWearingItem(EquipmentSlot.CHEST) && equipment.isWearingItem(EquipmentSlot.LEGS);
+                    }
+                }.sleep();
             }
         }
     }
